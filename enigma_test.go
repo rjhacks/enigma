@@ -9,15 +9,15 @@ import (
 )
 
 var rotors = []Rotor{
-	MakeRotor("EKMFLGDQVZNTOWYHXUSPAIBRCJ", 'Q'), // Rotor I
-	MakeRotor("AJDKSIRUXBLHWTMCQGZNPYFVOE", 'E'), // Rotor II
-	MakeRotor("BDFHJLCPRTXVZNYEIWGAKMUSQO", 'V')} // Rotor III
+	MakeRotorOrDie("EKMFLGDQVZNTOWYHXUSPAIBRCJ", 'Q'), // Rotor I
+	MakeRotorOrDie("AJDKSIRUXBLHWTMCQGZNPYFVOE", 'E'), // Rotor II
+	MakeRotorOrDie("BDFHJLCPRTXVZNYEIWGAKMUSQO", 'V')} // Rotor III
 var ringsettings = []byte{'A', 'A', 'A'}
 var positions = []byte{'A', 'A', 'A'}
-var reflector = MakeReflector("YRUHQSLDPXNGOKMIEBFZCWVJAT") // Reflector B, wide
+var reflector = MakeReflectorOrDie("YRUHQSLDPXNGOKMIEBFZCWVJAT") // Reflector B, wide
 
 func MakeEnigma(t *testing.T) Enigma {
-	err := ValidateMultipleRotors(rotors)
+	err := ValidateRotors(rotors)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -25,7 +25,7 @@ func MakeEnigma(t *testing.T) Enigma {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	enigma := NewLogical()
+	enigma := New()
 	enigma.InstallRotors(rotors)
 	enigma.SetRingSettings(ringsettings)
 	enigma.SetRotorPositions(positions)
