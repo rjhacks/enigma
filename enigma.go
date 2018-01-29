@@ -2,36 +2,6 @@ package enigma
 
 const numLetters uint8 = 26
 
-// Rotor represents the configuration of a single Enigma rotor.
-type Rotor struct {
-	// Every rotor has 26 contacts on both the left and the right side.
-	// Each of the 26 contacts on one side is connected to exactly one
-	// contact on the other side. The mapping below expresses those
-	// connections.
-	//
-	// Each contact has an index 0-25 that identifies its position on
-	// its side of the rotor. The mapping below indicates which 'right'
-	// contact is connected to which 'left' contact; this is the usual
-	// mapping found to describe an Enigma rotor. To convert from the
-	// string-based format that mapping is normally found in, use the
-	// MakeRotor() method in 'util.go'. To check that your resulting
-	// rotor makes sense, use ValidateRotor().
-	rlMapping [numLetters]byte
-
-	// Every rotor has different points at which it "turns over"
-	// (causes the next rotor to advance one position). This mapping
-	// indicates whether a given point is such a turnover point.
-	turnoverPoints [numLetters]bool
-}
-
-// Reflector represents the configuration of a single Engima reflector.
-type Reflector struct {
-	// The reflector, unlike a rotor, has contacts on only one side,
-	// and thus maps between contacts on the same side. If 'A' maps
-	// to 'B', 'B' therefore must also map to 'A'.
-	mapping [numLetters]byte
-}
-
 // Enigma is the code version of the "human" interface of a physical Enigma
 // machine. Its operations represent the actions a human might perform with
 // a physical Enigma, such as installing rotors, or pressing keys. Where an
@@ -71,25 +41,33 @@ type Enigma interface {
 	// position representing the rotation of the leftmost ring.
 	SetRotorPositions(positions []byte)
 
+	// SetPlugboard configures the Enigma to use the given plugboard
+	// configuration. The plugboard configuration was another important secret
+	// encoded in the German code books.
+	SetPlugboard(plugboard Plugboard)
+
 	// KeyPress takes the value of the key pressed on the keyboard, and returns
 	// the value of the light that would light up in response.
 	KeyPress(k byte) byte
 }
 
 type enigma struct {
+	// The Enigma's plugboard, if any. If no plugboard is present this is nil.
+	plugboard *Plugboard
+
 	// In a physical Enigma's spindle (the component containing the rotors and
 	// reflector), electrical signals enter from the right, pass through rotors
 	// right-to-left, then through the reflector, then left-to-right through the
 	// rotors again. The order of these components matters.
-
+	//
 	// The reflector is the leftmost component in the Engima's physical spindle.
 	reflector Reflector
 
 	// The rotors in this machine, left-to-right.
-	rotor []rotorConfig
+	rotor []rotorState
 }
 
-type rotorConfig struct {
+type rotorState struct {
 	Rotor
 
 	// A rotor needs to map its contacts both ways, since contacts get
@@ -108,7 +86,7 @@ type rotorConfig struct {
 	rotation uint8
 }
 
-func setUpRotor(base Rotor, r *rotorConfig) {
+func setUpRotor(base Rotor, r *rotorState) {
 	r.turnoverPoints = base.turnoverPoints
 	r.rlMapping = base.rlMapping
 
@@ -120,7 +98,7 @@ func setUpRotor(base Rotor, r *rotorConfig) {
 }
 
 func (e *enigma) InstallRotors(rotors []Rotor) {
-	e.rotor = make([]rotorConfig, len(rotors))
+	e.rotor = make([]rotorState, len(rotors))
 	for i, rotor := range rotors {
 		setUpRotor(rotor, &e.rotor[i])
 	}
@@ -138,20 +116,35 @@ func (e *enigma) SetRotorPositions(positions []byte) {
 	}
 }
 
+func (e *enigma) getRotorPositions() []byte {
+	positions := make([]byte, len(e.rotor))
+	for i, rotor := range e.rotor {
+		positions[i] = rotor.rotation + 'A'
+	}
+	return positions
+}
+
 func (e *enigma) InstallReflector(reflector Reflector) {
 	e.reflector = reflector
 }
 
+func (e *enigma) SetPlugboard(plugboard Plugboard) {
+	e.plugboard = &plugboard
+}
+
 func (e *enigma) rotate() {
-	// The rightmost rotor rotates fastest.
-	for i := len(e.rotor) - 1; i >= 0; i-- {
-		rotation := &e.rotor[i].rotation
-		// Turn over only when the current rotor position is a turnover
-		// point.
-		turnover := e.rotor[i].turnoverPoints[*rotation]
-		*rotation = (*rotation + 1) % numLetters
-		if !turnover {
-			break
+	for i := 0; i < len(e.rotor); i++ {
+		// A rotor turns when any one of the following is true:
+		// - It is the rightmost rotor (which always turns).
+		turn := i == len(e.rotor)-1
+		// - It is in a notched position itself, and there's a rotor to its left for
+		//   it to push. This condition causes the "double step" effect for (only)
+		//   the middle rotor in a 3-rotor machine.
+		turn = turn || (i > 0 && i < len(e.rotor)-1 && e.rotor[i].turnoverPoints[e.rotor[i].rotation])
+		// - Its right neighbour is in a notched position and will push it.
+		turn = turn || e.rotor[i+1].turnoverPoints[e.rotor[i+1].rotation]
+		if turn {
+			e.rotor[i].rotation = (e.rotor[i].rotation + 1) % numLetters
 		}
 	}
 }
@@ -170,6 +163,9 @@ func removeRotation(rot uint8, ringsetting uint8, contact uint8) uint8 {
 func (e *enigma) KeyPress(k byte) byte {
 	// Rotate the rotors for the next key press.
 	e.rotate()
+
+	// Run the key press through the plugboard.
+	k = e.plugboard.mapLetter(k)
 
 	// Determine the input on the stator.
 	contact := k - 'A'
@@ -205,7 +201,13 @@ func (e *enigma) KeyPress(k byte) byte {
 		contact = removeRotation(r.rotation, r.ringsetting, contact)
 	}
 
-	return contact + 'A'
+	// Pass back through the stator.
+	k = contact + 'A'
+
+	// Second pass through the plugboard.
+	k = e.plugboard.mapLetter(k)
+
+	return k
 }
 
 // New creates a new Enigma machine.
