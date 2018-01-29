@@ -7,19 +7,9 @@ import (
 	goflag "flag"
 
 	"github.com/golang/glog"
-	"github.com/rjhacks/enigma"
+	"github.com/rjhacks/enigma/enigma"
 	"github.com/spf13/cobra"
 )
-
-/*
-	"fmt"
-	"log"
-	"os"
-	"strings"
-
-	"github.com/rjhacks/enigma"
-	"gopkg.in/urfave/cli.v1"
-*/
 
 var debugFlag bool
 
