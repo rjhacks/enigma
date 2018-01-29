@@ -9,10 +9,10 @@ import (
 
 func MakeExampleEnigma(t *testing.T) Enigma {
 	enigma := New()
-	enigma.InstallRotors([]Rotor{rotors["I"], rotors["II"], rotors["III"]})
+	enigma.InstallRotors([]Rotor{Rotors["I"], Rotors["II"], Rotors["III"]})
 	enigma.SetRingSettings([]byte{'A', 'A', 'A'})
 	enigma.SetRotorPositions([]byte{'A', 'A', 'A'})
-	enigma.InstallReflector(reflectors["B_wide"])
+	enigma.InstallReflector(Reflectors["B"])
 	// No plugboard connections.
 	return enigma
 }
@@ -25,7 +25,7 @@ func TestBasic(t *testing.T) {
 	assert := assert.New(t)
 	enigma := MakeExampleEnigma(t)
 
-	// Given that we're using rotors I, II, III (left to right), the wide B-reflector,
+	// Given that we're using Rotors I, II, III (left to right), the wide B-reflector,
 	// and have all ring settings in A-position, the expected output of "AAAAA" is
 	// "BDZGO" (source: https://en.wikipedia.org/wiki/Enigma_rotor_details).
 	input := "AAAAA"
@@ -42,7 +42,7 @@ func TestRingSetting(t *testing.T) {
 	assert := assert.New(t)
 	enigma := MakeExampleEnigma(t)
 
-	// With the rotors I, II, III (from left to right), wide B-reflector, all ring
+	// With the Rotors I, II, III (from left to right), wide B-reflector, all ring
 	// settings in B-position, and start position AAA, typing AAAAA will produce the
 	// encoded sequence EWTYX. (source: https://en.wikipedia.org/wiki/Enigma_rotor_details).
 	enigma.SetRingSettings([]byte{'B', 'B', 'B'})
@@ -126,8 +126,8 @@ func TestRealMessage1(t *testing.T) {
 	assert := assert.New(t)
 
 	enigma := New()
-	enigma.InstallReflector(reflectors["A"])
-	enigma.InstallRotors([]Rotor{rotors["II"], rotors["I"], rotors["III"]})
+	enigma.InstallReflector(Reflectors["A"])
+	enigma.InstallRotors([]Rotor{Rotors["II"], Rotors["I"], Rotors["III"]})
 	enigma.SetRingSettings([]byte{'X', 'M', 'V'}) // Described as positions 24, 13, 22.
 	enigma.SetPlugboard(MakePlugboard([]Pair{
 		{'A', 'M'}, {'F', 'I'}, {'N', 'V'}, {'P', 'S'}, {'T', 'U'}, {'W', 'Z'}}))
@@ -146,8 +146,8 @@ func TestRealMessage2(t *testing.T) {
 	assert := assert.New(t)
 
 	enigma := New()
-	enigma.InstallReflector(reflectors["B_wide"]) // Assumed, not explicitly stated.
-	enigma.InstallRotors([]Rotor{rotors["II"], rotors["I"], rotors["V"]})
+	enigma.InstallReflector(Reflectors["B"]) // Assumed, not explicitly stated.
+	enigma.InstallRotors([]Rotor{Rotors["II"], Rotors["I"], Rotors["V"]})
 	enigma.SetRingSettings([]byte{'A', 'A', 'A'})
 	enigma.SetPlugboard(MakePlugboard([]Pair{{'A', 'B'}, {'I', 'R'}, {'U', 'X'}, {'K', 'P'}}))
 	enigma.SetRotorPositions([]byte{'F', 'R', 'A'})

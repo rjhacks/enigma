@@ -160,15 +160,19 @@ func removeRotation(rot uint8, ringsetting uint8, contact uint8) uint8 {
 	return (contact - rot + ringsetting + 2*numLetters) % numLetters
 }
 
-func (e *enigma) KeyPress(k byte) byte {
+func (e *enigma) KeyPress(letter byte) byte {
 	// Rotate the rotors for the next key press.
 	e.rotate()
 
 	// Run the key press through the plugboard.
-	k = e.plugboard.mapLetter(k)
+	letter = e.plugboard.mapLetter(letter)
 
-	// Determine the input on the stator.
-	contact := k - 'A'
+	// Determine the input on the stator. Before the stator, while in the keyboard/plugboard/chassis
+	// it's easy to talk about each contact/wire as representing a single letter. In the rotors and
+	// reflector this is harder, because the ring setting can rotate the letter-markings on the rotor
+	// relative to the internal wiring. It's easier to talk about "contacts" 0-25 while we're in the
+	// rotors and reflector. The stator is the conversion-point.
+	contact := letter - 'A'
 
 	// Pass through rotors, right to left.
 	for i := len(e.rotor) - 1; i >= 0; i-- {
@@ -202,12 +206,12 @@ func (e *enigma) KeyPress(k byte) byte {
 	}
 
 	// Pass back through the stator.
-	k = contact + 'A'
+	letter = contact + 'A'
 
 	// Second pass through the plugboard.
-	k = e.plugboard.mapLetter(k)
+	letter = e.plugboard.mapLetter(letter)
 
-	return k
+	return letter
 }
 
 // New creates a new Enigma machine.

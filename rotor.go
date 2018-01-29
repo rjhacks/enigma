@@ -3,14 +3,28 @@ package enigma
 import (
 	"fmt"
 	"log"
+	"sort"
 )
 
-var rotors = map[string]Rotor{
-	"I":   MakeRotorOrDie("EKMFLGDQVZNTOWYHXUSPAIBRCJ", 'Q'),
-	"II":  MakeRotorOrDie("AJDKSIRUXBLHWTMCQGZNPYFVOE", 'E'),
-	"III": MakeRotorOrDie("BDFHJLCPRTXVZNYEIWGAKMUSQO", 'V'),
-	"IV":  MakeRotorOrDie("ESOVPZJAYQUIRHXLNFTGKDCMWB", 'J'),
-	"V":   MakeRotorOrDie("VZBRGITYUPSDNHLXAWMJQOFECK", 'Z'),
+// Rotors is the set of Enigma rotors that were originally available to the Enigma I.
+var Rotors = map[string]Rotor{
+	"I":   makeRotorOrDie("EKMFLGDQVZNTOWYHXUSPAIBRCJ", 'Q'),
+	"II":  makeRotorOrDie("AJDKSIRUXBLHWTMCQGZNPYFVOE", 'E'),
+	"III": makeRotorOrDie("BDFHJLCPRTXVZNYEIWGAKMUSQO", 'V'),
+	"IV":  makeRotorOrDie("ESOVPZJAYQUIRHXLNFTGKDCMWB", 'J'),
+	"V":   makeRotorOrDie("VZBRGITYUPSDNHLXAWMJQOFECK", 'Z'),
+}
+
+// RotorNames returns the names of the available rotors, as a sorted slice of strings.
+func RotorNames() []string {
+	names := make([]string, len(Rotors))
+	i := 0
+	for k := range Rotors {
+		names[i] = k
+		i++
+	}
+	sort.Strings(names)
+	return names
 }
 
 // Rotor represents the configuration of a single Enigma rotor.
@@ -25,7 +39,7 @@ type Rotor struct {
 	// contact is connected to which 'left' contact; this is the usual
 	// mapping found to describe an Enigma rotor. To convert from the
 	// string-based format that mapping is normally found in, use the
-	// MakeRotor() method in 'util.go'. To check that your resulting
+	// makeRotor() method in 'util.go'. To check that your resulting
 	// rotor makes sense, use ValidateRotor().
 	rlMapping [numLetters]byte
 
@@ -43,11 +57,11 @@ type Reflector struct {
 	mapping [numLetters]byte
 }
 
-// MakeRotor turns a compact string representation of a rotor's internal wiring
+// makeRotor turns a compact string representation of a rotor's internal wiring
 // into an actual Rotor. In the string representation, position 0 represents
 // 'A', and its value represents the letter that 'A' connects to. Position 1
 // represents 'B', and so forth.
-func MakeRotor(s string, turnoverPoint byte) (*Rotor, error) {
+func makeRotor(s string, turnoverPoint byte) (*Rotor, error) {
 	var r Rotor
 	if len(s) != len(r.rlMapping) {
 		return nil, fmt.Errorf(
@@ -64,10 +78,10 @@ func MakeRotor(s string, turnoverPoint byte) (*Rotor, error) {
 	return &r, nil
 }
 
-// MakeRotorOrDie does the same as MakeRotor, but instead of returning errors
+// makeRotorOrDie does the same as makeRotor, but instead of returning errors
 // will kill the process in case of trouble.
-func MakeRotorOrDie(s string, turnoverPoint byte) Rotor {
-	r, err := MakeRotor(s, turnoverPoint)
+func makeRotorOrDie(s string, turnoverPoint byte) Rotor {
+	r, err := makeRotor(s, turnoverPoint)
 	if err != nil {
 		log.Fatal(err)
 	}
