@@ -37,7 +37,7 @@ If you'd like to play with the Enigma in code, you can include it directly in yo
 This implementation of the Enigma aims to be true to the Enigma I, as it was in December
 1938. The defining characteristics of this model include:
 * Three rotors (although the core code actually supports any number of rotors), chosen from a set of
-  five rotors, `I` through `IV`.
+  five rotors, `I` through `V`.
 * A single turnover point per rotor.
 * A straight connection on the entry stator (AKA: entry wheel, Eintrittswalze, ETW). Straight means
   that `A` maps to `A`, `B` maps to `B`, and so forth.
